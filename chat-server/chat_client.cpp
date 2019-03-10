@@ -26,10 +26,7 @@ int main() {
     hints.ai_protocol = IPPROTO_TCP;
 
     char buffer[4096] = {0};
-    char buffer2[4096] = {0};
-    char buffer3[4096] = {0};
-    char buffer4[4096] = {0};
-    string msg = "REPORT botid=2437018b280e2f36 os=windows <END>";
+    
 
     if (getaddrinfo("127.0.0.1", "8080", &hints, &res) == 0) {
         
@@ -39,11 +36,12 @@ int main() {
 
         //send(sock, msg.c_str(), msg.length(), 0);
 
-        recv(sock, buffer, 4096, 0);
+        recv(sock, buffer, 4096, 0);            
+        send(sock, "Hey Server!\n", 13, 0);
 
         printf("%s", buffer);
-
+        sleep(60);
+        
     }
-    else 
-        cout << "Could not find ip\n";
+
 }
