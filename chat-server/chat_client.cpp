@@ -11,7 +11,6 @@
 #include <string>
 #include <iostream>
 
-using namespace std;
 
 int main() {
 
@@ -25,23 +24,52 @@ int main() {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    char buffer[4096] = {0};
+    getaddrinfo("127.0.0.1", "8080", &hints, &res);
     
+    sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    connect(sock, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
 
-    if (getaddrinfo("127.0.0.1", "8080", &hints, &res) == 0) {
+    // std::string name;
+    // std::cout << "Name: ";
+    // std::cin >> name;    
+
+    // std::string message = "HELLO-FROM " + name + "\n";
+    // send(sock, message.c_str(), message.length(),0);
+
+    // std::string command;
+    // std::cin >> command;
+    // send(sock, command.c_str(), command.length(),0);
+    send(sock, "WHO\n", 5,0);
+    //send(sock, "WHO\\n", 6,0);
+
+    // while(1) {
+    //     int bytes_recv = 0;
+    //     char buffer[1024] = {0};
         
-        sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        connect(sock, res->ai_addr, res->ai_addrlen);
-        freeaddrinfo(res);
-
-        //send(sock, msg.c_str(), msg.length(), 0);
-
-        recv(sock, buffer, 4096, 0);            
-        send(sock, "Hey Server!\n", 13, 0);
-
-        printf("%s", buffer);
-        sleep(60);
+    //     std::cout << "\t>";
+    //     std::cin >> command;
         
-    }
+    //     if (command == "!who") {
+    //         int bytes_sent = send(sock, "WHO\n", 5, 0);
+
+    //     } else if (command.at(0) == '@') {
+    //         std::string input;
+    //         getline(std::cin, input);
+
+    //         std::string message = "SEND " + command.substr(1, command.length()) + " " + input + "\n";
+    //         std::cout << message;
+    //         int bytes_sent = send(sock, message.c_str(), message.length(), 0);
+
+            
+    //         std::cout << "CLIENT: " << message.c_str();
+        
+    //         bytes_recv = recv(sock, buffer, 1024, 0);
+            
+    //         std::cout << "SERVER: " << buffer;
+    //     }
+    // }
+
+
 
 }
