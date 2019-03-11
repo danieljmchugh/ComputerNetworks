@@ -18,6 +18,12 @@
 
 std::vector<std::string> clients; 
 
+/*
+    TODO:
+        -implement rmClient func.
+
+*/
+
 bool checkNameTaken(std::string name) {
     for (int i = 0; i < clients.size(); i++) {
         if (clients.at(i) == name) {
@@ -27,11 +33,15 @@ bool checkNameTaken(std::string name) {
     return false;
 }
 
+// void rmClient(std::string name) {
+    
+// }
+
 std::string currOnline(){
     std::string list = "WHO-OK ";
     for (int i = 0; i < clients.size(); i++) {
         if (i == (clients.size() -1)) {
-            list += clients.at(i);
+            list += "";
         }
         list += (clients.at(i) + ", ");
     }
@@ -69,39 +79,26 @@ void * socketThread(void *arg) {
     }
 
     if (isLoggedIn) {
-        char buffer[1024] = {0};
+        char buffer1[1024] = {0};
         std::cout << "Client " << currSocket << " is logged in as " << client_name << std::endl;
         // while(1) {
-            recv(currSocket, buffer, 1024, 0);
-            std::cout << buffer << std::endl;
-            std::string command(buffer);
-            
+        std::string command;
+        while(command != "!quit") {
+            std::cout << "Waiting for command...\n";
+            recv(currSocket, buffer1, 1024, 0);
+            command = buffer1;
             if (command == "WHO\n") {
-                std::cout << "CLIENT: WHO\n"; 
-                // send list of currently logged in clients
-                std::string clientList = currOnline();
-                send(currSocket, clientList.c_str(),clientList.length(),0);
-
-            } else if (command == "WHO") {
-                std::cout << "1) WHO\\n";
-
-            } else if (command == "WHO\\n") {
-                std::cout << "2) WHO\\n";
+                std::string line = currOnline();
+                send(currSocket, line.c_str(), line.length(), 0);
+            } else {
+                std::cout << command << std::endl;
+                send(currSocket, command.c_str(), command.length(), 0);
             }
+        }    
 
 
-            // if (strcmp("WHO\n",buffer) == 0) {
-            //     std::cout << "CLIENT: WHO\n"; 
-            //     // send list of currently logged in clients
-            //     std::string clientList = currOnline();
-            //     send(currSocket, clientList.c_str(),clientList.length(),0);
 
-            // } else if (strcmp("WHO",buffer) == 0) {
-            //     std::cout << "1) WHO\\n";
-
-            // } else if (strcmp("WHO\\n",buffer) == 0) {
-            //     std::cout << "2) WHO\\n";
-            // }
+            
         //}
     }
 
@@ -118,7 +115,8 @@ void * socketThread(void *arg) {
     // }
       
 
-    // Need to close properly
+    // Need to close properly and remove client
+    //rmClient(client_name);
     close(currSocket);
     pthread_exit(NULL);
 }
