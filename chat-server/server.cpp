@@ -18,45 +18,93 @@
 
 std::vector<std::string> clients; 
 
+bool checkNameTaken(std::string name) {
+    for (int i = 0; i < clients.size(); i++) {
+        if (clients.at(i) == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string currOnline(){
+    std::string list = "WHO-OK ";
+    for (int i = 0; i < clients.size(); i++) {
+        if (i == (clients.size() -1)) {
+            list += clients.at(i);
+        }
+        list += (clients.at(i) + ", ");
+    }
+    return list;
+}
 
 
 void * socketThread(void *arg) {
     int currSocket = *((int *)arg);
-    char buffer[1024] = {0};
-    
-    std::string client_name = "Dan";
-    clients.push_back(client_name);
-    
-    //char buffer[1024] = {0};
-    recv(currSocket, buffer, 1024, 0);
-    // std::string messageS(buffer);    
-    
-    // std::cout << "String: " << messageS;
-    // std::cout << "------" << std::endl; // test for \n in messageS
-    
-    if (strcmp("WHO\n",buffer)) {std::cout << "1) WHO\n"; } 
-    
-    else if (strcmp("WHO\\n",buffer)) {
-        std::cout << "Currently online: ";
-        //std::cout << "2) WHO\\n\n";
-        for (int i = 0; i < clients.size(); i++) {
-             std::cout << clients.at(i) << ", ";
-        } 
-    }
+    std::string client_name;
+    bool isLoggedIn = false;
     
     
-    else {std::cout << "Neither...\n";}
 
-    // if (messageS.substr(0,10) == "HELLO-FROM") {
-    //         client_name = messageS.substr(11,(messageS.length()-11));
-    //         for (int i = 0; i < clients.size(); i++) {
-    //             if (clients.at(i) == client_name) {
-    //                 std::cout << client_name << " is taken!" << std::endl;
-    //             }
-    //         }
-    //         // std::cout << "HELLO " << client_name << std::endl;
-    //         // clients.push_back(client_name);
-    // }
+    while (!isLoggedIn) {
+        char buffer[1024] = {0};
+        recv(currSocket, buffer, 1024, 0);
+        std::string messageS(buffer);    
+        bool isNameTaken;
+        std::cout << "String: " << messageS;
+        std::cout << "------" << std::endl; // test for \n in messageS
+        
+        client_name = messageS.substr(11,(messageS.length()-12));
+        std::cout << "\t Name: ---" << client_name << "---" << std::endl;
+        isNameTaken = checkNameTaken(client_name);
+        if (isNameTaken == false) { 
+            clients.push_back(client_name);
+            isLoggedIn = true;
+            std::string loginMsg = "HELLO " + client_name + '\n';
+            send(currSocket,loginMsg.c_str(),loginMsg.length(),0);
+        } else if (isNameTaken == true) {
+            isLoggedIn = false;
+            send(currSocket,"IN-USE\n",7,0);
+        }
+    }
+
+    if (isLoggedIn) {
+        char buffer[1024] = {0};
+        std::cout << "Client " << currSocket << " is logged in as " << client_name << std::endl;
+        // while(1) {
+            recv(currSocket, buffer, 1024, 0);
+            std::cout << buffer << std::endl;
+            std::string command(buffer);
+            
+            if (command == "WHO\n") {
+                std::cout << "CLIENT: WHO\n"; 
+                // send list of currently logged in clients
+                std::string clientList = currOnline();
+                send(currSocket, clientList.c_str(),clientList.length(),0);
+
+            } else if (command == "WHO") {
+                std::cout << "1) WHO\\n";
+
+            } else if (command == "WHO\\n") {
+                std::cout << "2) WHO\\n";
+            }
+
+
+            // if (strcmp("WHO\n",buffer) == 0) {
+            //     std::cout << "CLIENT: WHO\n"; 
+            //     // send list of currently logged in clients
+            //     std::string clientList = currOnline();
+            //     send(currSocket, clientList.c_str(),clientList.length(),0);
+
+            // } else if (strcmp("WHO",buffer) == 0) {
+            //     std::cout << "1) WHO\\n";
+
+            // } else if (strcmp("WHO\\n",buffer) == 0) {
+            //     std::cout << "2) WHO\\n";
+            // }
+        //}
+    }
+
 
     // while (recv(currSocket, buffer, 1024, 0) > 0) {
     //      if (messageS == "WHO\n") { //.substr(0,4)

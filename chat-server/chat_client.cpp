@@ -30,45 +30,56 @@ int main() {
     connect(sock, res->ai_addr, res->ai_addrlen);
     freeaddrinfo(res);
 
-    // std::string name;
-    // std::cout << "Name: ";
-    // std::cin >> name;    
 
-    // std::string message = "HELLO-FROM " + name + "\n";
-    // send(sock, message.c_str(), message.length(),0);
+    bool isLoggedIn = false;
 
-    // std::string command;
-    // std::cin >> command;
-    // send(sock, command.c_str(), command.length(),0);
-    send(sock, "WHO\n", 5,0);
-    //send(sock, "WHO\\n", 6,0);
+    while (!isLoggedIn) {
+        char buffer1[1024] = {0};
+        std::string name;
+        std::cout << "Name: ";
+        std::cin >> name;    
 
+        std::string message = "HELLO-FROM " + name + "\n";
+        send(sock, message.c_str(), message.length(),0);
+
+        recv(sock, buffer1, 1024, 0);
+        std::cout << buffer1;
+        std::string resp(buffer1);
+
+        if (resp.substr(0,5) == "HELLO") {
+            isLoggedIn = true;
+        }
+    }
+
+    std::cout << "I am logged in!\n";
+    while(1) {
+        char buffer2[1024] = {0};
+        std::string command;
+        std::cin >> command;
+        if (command == "who") {
+            std::cout << "WHO\n";
+            send(sock, "WHO", 4, 0);
+
+        }
+        send(sock, command.c_str(), command.length(), 0);
+
+        recv(sock, buffer2, 1024, 0);
+        std::cout << buffer2 << std::endl;
+    }
     // while(1) {
     //     int bytes_recv = 0;
     //     char buffer[1024] = {0};
         
     //     std::cout << "\t>";
-    //     std::cin >> command;
+    //     //std::cin >> command;
+
+
         
     //     if (command == "!who") {
     //         int bytes_sent = send(sock, "WHO\n", 5, 0);
 
-    //     } else if (command.at(0) == '@') {
-    //         std::string input;
-    //         getline(std::cin, input);
-
-    //         std::string message = "SEND " + command.substr(1, command.length()) + " " + input + "\n";
-    //         std::cout << message;
-    //         int bytes_sent = send(sock, message.c_str(), message.length(), 0);
-
-            
-    //         std::cout << "CLIENT: " << message.c_str();
-        
-    //         bytes_recv = recv(sock, buffer, 1024, 0);
-            
-    //         std::cout << "SERVER: " << buffer;
     //     }
-    // }
+    //}
 
 
 
