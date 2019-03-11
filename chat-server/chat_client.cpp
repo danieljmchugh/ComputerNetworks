@@ -66,21 +66,5 @@ int main() {
         std::cout << buffer2 << std::endl;
         
     }
-    // while(1) {
-    //     int bytes_recv = 0;
-    //     char buffer[1024] = {0};
-        
-    //     std::cout << "\t>";
-    //     //std::cin >> command;
-
-
-        
-    //     if (command == "!who") {
-    //         int bytes_sent = send(sock, "WHO\n", 5, 0);
-
-    //     }
-    //}
-
-
-
+    return 0'
 }
