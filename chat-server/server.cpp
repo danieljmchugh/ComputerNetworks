@@ -54,7 +54,6 @@ void * socketThread(void *arg) {
     std::string client_name;
     bool isLoggedIn = false;
     
-    
 
     while (!isLoggedIn) {
         char buffer[1024] = {0};
@@ -81,7 +80,7 @@ void * socketThread(void *arg) {
     if (isLoggedIn) {
         char buffer1[1024] = {0};
         std::cout << "Client " << currSocket << " is logged in as " << client_name << std::endl;
-        // while(1) {
+        
         std::string command;
         while(command != "!quit") {
             std::cout << "Waiting for command...\n";
@@ -95,25 +94,7 @@ void * socketThread(void *arg) {
                 send(currSocket, command.c_str(), command.length(), 0);
             }
         }    
-
-
-
-            
-        //}
     }
-
-
-    // while (recv(currSocket, buffer, 1024, 0) > 0) {
-    //      if (messageS == "WHO\n") { //.substr(0,4)
-            // std::cout << "Currently online: ";
-            // for (int i = 0; i < clients.size(); i++) {
-            //     std::cout << clients.at(i) << ", ";
-            // } 
-    //     } else {
-    //         std::cout << messageS;
-    //     }
-    // }
-      
 
     // Need to close properly and remove client
     //rmClient(client_name);
