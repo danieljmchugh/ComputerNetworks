@@ -82,14 +82,23 @@ void * socketThread(void *arg) {
         std::cout << "Client " << currSocket << " is logged in as " << client_name << std::endl;
         
         std::string command;
-        while(command != "!quit") {
+        while(command != "!quit\n") {
+            
             std::cout << "Waiting for command...\n";
             recv(currSocket, buffer1, 1024, 0);
             command = buffer1;
+
             if (command == "WHO\n") {
                 std::string line = currOnline();
                 send(currSocket, line.c_str(), line.length(), 0);
-            } else {
+            } 
+            else if (command == "!quit\n") {
+
+                std::cout << "Removed\n";
+                isLoggedIn = false;
+                break;
+            } 
+            else {
                 std::cout << command << std::endl;
                 send(currSocket, command.c_str(), command.length(), 0);
             }
@@ -111,7 +120,6 @@ int main() {
     struct sockaddr_in serv_addr, cli_addr;
     struct sockaddr_storage serverStorage;
 
-    //std::vector<int> clients;
 
     sockFd =  socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP, 0 = default protocol(???)
 

@@ -59,6 +59,8 @@ int main() {
         std::cin >> command;
         if (command == "!who") {
             send(sock, "WHO\n",5, 0);    
+        } else if (command == "!quit") {
+            send(sock, "!quit\n",7, 0);    
         } else {
             send(sock, command.c_str(), command.length(), 0);
         }
