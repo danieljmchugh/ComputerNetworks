@@ -20,20 +20,9 @@
 Clients clients;
 
 /*
-    TODO:
-        -implement rmClient func.
-        -func. to print currClient info
-
-        -bug: 2 users enter same username (at same time)
-
+    BUG:
+        user IN-USE for second client
 */
-
-// bool checkNameTaken(std::string name) {}
-
-// void rmClient(std::string name) {}
-
-//std::string currOnline(){}
-
 
 void * socketThread(void *arg) {
     int currSocket = *((int *)arg);
