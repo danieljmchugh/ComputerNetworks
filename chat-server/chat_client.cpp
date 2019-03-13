@@ -37,7 +37,7 @@ int main() {
         char buffer1[1024] = {0};
         std::string name;
         std::cout << "Name: ";
-        std::cin >> name;    
+        std::getline(std::cin, name);    
 
         std::string message = "HELLO-FROM " + name + "\n";
         send(sock, message.c_str(), message.length(),0);
@@ -56,7 +56,7 @@ int main() {
         char buffer2[1024] = {0};
         std::string command;
         std::cout << "Enter command: ";
-        std::cin >> command;
+        std::getline(std::cin, command);
         
         if (command == "!who") {
             send(sock, "WHO\n",5, 0);

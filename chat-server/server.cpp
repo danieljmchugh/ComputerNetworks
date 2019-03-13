@@ -32,11 +32,6 @@ Clients clients;
 
 // void rmClient(std::string name) {}
 
-void testNline(std::string line) {
-    std::cout << "\tString: " << line;
-    std::cout << "------" << std::endl; // test for \n in messageS
-}
-
 //std::string currOnline(){}
 
 
@@ -47,40 +42,41 @@ void * socketThread(void *arg) {
     
     
     Client currClient("-MISSING-", currSocket, isLoggedIn);  // current client object
-    
+    std::cout << "Client connected...\n";
 
     while (!currClient.isLoggedIn()) {
         char buffer[1024] = {0};
         recv(currSocket, buffer, 1024, 0);
+        std::cout << "RECEIVED: " << buffer;
         std::string messageS(buffer);    
         bool isNameTaken;
         
-        testNline(messageS);
-        
-        client_name = messageS.substr(11,(messageS.length()-12));
+        std::cout << strlen(buffer) << std::endl;
+        if ((strlen(buffer) > 0)) {
+            client_name = messageS.substr(11,(messageS.length()-12));
 
-        testNline(client_name);
-        
-        isNameTaken = clients.checkIfTaken(client_name);
-        
-        if (isNameTaken == false) { 
             
-            currClient.setName(client_name);
+            isNameTaken = clients.checkIfTaken(client_name);
             
-            isLoggedIn = true;
-            currClient.isLoggedIn(true);
-            
-            
-            clients.add(currClient);
+            if (isNameTaken == false) { 
+                
+                currClient.setName(client_name);
+                std::cout << "Client set name: " << currClient.getName() << std::endl;
+                isLoggedIn = true;
+                currClient.isLoggedIn(true);
+                
+                clients.add(currClient);
 
-            std::string loginMsg = "HELLO " + currClient.getName() + '\n';
+                std::string loginMsg = "HELLO " + currClient.getName() + '\n';
 
-            send(currSocket,loginMsg.c_str(),loginMsg.length(),0);
+                send(currSocket,loginMsg.c_str(),loginMsg.length(),0);
 
-        } else if (isNameTaken == true) {
-            //isLoggedIn = false;
-            currClient.isLoggedIn(false);
-            send(currSocket,"IN-USE\n",7,0);
+            } else if (isNameTaken == true) {
+                //isLoggedIn = false;
+                std::cout << "Client set name was taken." << std::endl;
+                send(currSocket,"IN-USE\n",7,0);
+                //currClient.isLoggedIn(false);
+            }
         }
     }
 
@@ -89,7 +85,7 @@ void * socketThread(void *arg) {
         std::cout << "Client " << currClient.getHandle() << " is logged in as " << currClient.getName() << std::endl;
         
         std::string command = "";
-        while(command != "!quit\n") {
+        while(currClient.isLoggedIn()) {
             
             std::cout << "Waiting for command...\n";
             recv(currSocket, buffer1, 1024, 0);
@@ -97,43 +93,52 @@ void * socketThread(void *arg) {
 
             if (command == "WHO\n") {
                 
+                std::cout << currClient.getName() << " sent !who" << std::endl;
                 std::string line = clients.who();
                 send(currSocket, line.c_str(), line.length(), 0);
-                //std::cout << line;
+                
             } 
             else if (command == "QUIT\n") {
                 
-                std::cout << "Not Removed\n";
 
+                currClient.isLoggedIn(false);
+                std::cout << currClient.getName() << " quit." << std::endl;
                 clients.remove(currClient.getHandle());
-                
-                std::cout << "Removed\n";
-                
-                
+
+                break;
+
             } 
             else if (command == "ME\n") {
 
                 currClient.getAllInfo();
                 send(currSocket, "OK", 3, 0);
+                std::cout << currClient.getName() << " sent !me" << std::endl;
 
             }
-            else if (command.at(0) == '@') {
+            else if (command.substr(0,4) == "SEND") {
                 int handle = clients.find(command);
+
                 if (handle > 0) {
-                    //send...
+                    std::cout << currClient.getName() << " sent message" << std::endl;
+
+                    std::string line = "DELIVERY " + currClient.getName() + " " + clients.extractMessage(command) + '\n';
+
+                    send(handle, line.c_str(), line.length(), 0);
+
+                    send(currClient.getHandle(), "SEND-OK\n", 9, 0);
                 } else {
-                    //unkown...
+                    send(currClient.getHandle(), "UNKNOWN\n", 9, 0);
                 }
             }
             else {
                 std::cout << command << std::endl;
-                send(currSocket, command.c_str(), command.length(), 0);
+                //send(currSocket, command.c_str(), command.length(), 0);
             }
         }    
     }
-
+    std::cout << "Client has left the chat\n";
     // Need to close properly and remove client
-    //rmClient(client_name);
+    
     close(currSocket);
     pthread_exit(NULL);
 }
