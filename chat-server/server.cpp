@@ -30,7 +30,7 @@ void * socketThread(void *arg) {
     bool isLoggedIn = false;
     
     
-    Client currClient("-MISSING-", currSocket, isLoggedIn);  // current client object
+    Client currClient("--MISSING--", currSocket, isLoggedIn);  // current client object
     std::cout << "Client connected...\n";
 
     while (!currClient.isLoggedIn()) {
@@ -64,6 +64,11 @@ void * socketThread(void *arg) {
                 //isLoggedIn = false;
                 std::cout << "Client set name was taken." << std::endl;
                 send(currSocket,"IN-USE\n",7,0);
+                currClient.isLoggedIn(false);
+                clients.remove(currClient.getHandle());
+
+                close(currSocket);
+                pthread_exit(NULL);
                 //currClient.isLoggedIn(false);
             }
         }
@@ -77,7 +82,14 @@ void * socketThread(void *arg) {
         while(currClient.isLoggedIn()) {
             
             std::cout << "Waiting for command...\n";
-            recv(currSocket, buffer1, 1024, 0);
+            int bytes_recv = recv(currSocket, buffer1, 1024, 0);
+            if ((bytes_recv == 0) || (bytes_recv < 0)) { // if client doesnt send anything (eg. disconnects w/o warning)
+                currClient.isLoggedIn(false);
+                std::cout << currClient.getName() << " quit." << std::endl;
+                clients.remove(currClient.getHandle());
+                break;
+            }
+            
             command = buffer1;
 
             if (command == "WHO\n") {
