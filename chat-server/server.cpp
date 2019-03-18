@@ -35,12 +35,19 @@ void * socketThread(void *arg) {
 
     while (!currClient.isLoggedIn()) {
         char buffer[1024] = {0};
-        recv(currSocket, buffer, 1024, 0);
+        int bytes_recv = recv(currSocket, buffer, 1024, 0);
         std::cout << "RECEIVED: " << buffer;
         std::string messageS(buffer);    
         bool isNameTaken;
         
         std::cout << strlen(buffer) << std::endl;
+
+        if ((bytes_recv == 0) || (bytes_recv < 0)) {
+            break;
+        }
+
+
+
         if ((strlen(buffer) > 0)) {
             client_name = messageS.substr(11,(messageS.length()-12));
 
@@ -83,10 +90,16 @@ void * socketThread(void *arg) {
             
             std::cout << "Waiting for command...\n";
             int bytes_recv = recv(currSocket, buffer1, 1024, 0);
+            
             if ((bytes_recv == 0) || (bytes_recv < 0)) { // if client doesnt send anything (eg. disconnects w/o warning)
-                currClient.isLoggedIn(false);
-                std::cout << currClient.getName() << " quit." << std::endl;
-                clients.remove(currClient.getHandle());
+                
+                //currClient.isLoggedIn(false);
+                if (clients.remove(currClient.getHandle()) == 1) {
+                    std::cout << "Could not remove\n";
+                }
+                
+                std::cout << currClient.getName() << " has disconnected." << std::endl;
+                
                 break;
             }
             
@@ -101,10 +114,13 @@ void * socketThread(void *arg) {
             } 
             else if (command == "QUIT\n") {
                 
+                //currClient.isLoggedIn(false);
 
-                currClient.isLoggedIn(false);
+                if (clients.remove(currClient.getHandle()) == 1) {
+                    std::cout << "Could not remove\n";
+                }
+                
                 std::cout << currClient.getName() << " quit." << std::endl;
-                clients.remove(currClient.getHandle());
 
                 break;
 
@@ -132,14 +148,14 @@ void * socketThread(void *arg) {
                 }
             }
             else {
-                std::cout << command << std::endl;
-                //send(currSocket, command.c_str(), command.length(), 0);
+                send(currSocket, "BAD-RQST-BODY\n", 15, 0);
             }
         }    
     }
-    std::cout << "Client has left the chat\n";
     // Need to close properly and remove client
     
+    std::cout << "Client has left the chat\n";
+    currClient.isLoggedIn(false);
     close(currSocket);
     pthread_exit(NULL);
 }

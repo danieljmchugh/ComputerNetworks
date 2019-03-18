@@ -25,19 +25,14 @@ public:
         this->socketHandle = socketHandle;
     }
 
-    // PRINT INFO OF CLIENT
-    inline void getAllInfo() {
-        std::cout << "handle\tname\tisLoggedIn\n" << this->socketHandle << '\t' 
-                  << this->name << '\t' << this->login << '\n';
-    }
 
     // isLoggedIn returns login truth value
     inline bool isLoggedIn() {
-        return this->login ? true : false;
+        return this->login;
     }
 
     // isLoggedIn with a parameter sets login value
-    inline void isLoggedIn(bool value) {
+    inline void setLoggedIn(bool value) {
         this->login = value;
     }
 
@@ -56,12 +51,10 @@ public:
 
     // REMOVE CLIENT FROM DATABASE
     // return 0 - success, return 1 - client not found
-    inline int remove(int handle) {
-        for (int i = 0; i < ClientDb.size() + 1; ++i) {
-            if (i == ClientDb.size())
-                return 1;
-            if (ClientDb.at(i).getHandle() == handle) {
-                ClientDb.at(i).isLoggedIn(false);
+    inline int remove(std::string username) {
+        for (int i = ClientDb.size(); i-- >0;) {
+            if (ClientDb.at(i).getName() == username) {
+                ClientDb.at(i).setLoggedIn(false);
                 break;
             }
         }
@@ -70,7 +63,7 @@ public:
 
     // RESPONSE TO A WHO\n MESSAGE
     inline std::string who() {
-        std::string message = "WHO-OK echobot, ";
+        std::string message = "WHO-OK ";
 
         for (int i = 0; i < ClientDb.size() - 1; ++i) {
             if (ClientDb.at(i).isLoggedIn())
@@ -88,9 +81,9 @@ public:
 
     // PRINT EVERYONE
     inline void print() {
+        std::cout << "handle\tname\tisLoggedIn\n";
         for (int i = 0; i < ClientDb.size(); ++i) {
-            if (ClientDb.at(i).isLoggedIn())
-                std::cout << ClientDb.at(i).getHandle() << '\t' << ClientDb.at(i).getName() << '\n';
+            std::cout << ClientDb.at(i).getHandle() << "\t" << ClientDb.at(i).getName() << "\t" << ClientDb.at(i).isLoggedIn() << std::endl;
         }
     }
 
