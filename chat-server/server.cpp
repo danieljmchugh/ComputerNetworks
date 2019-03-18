@@ -1,6 +1,3 @@
-// https://www.bogotobogo.com/cplusplus/sockets_server_client.php 
-// https://github.com/RedAndBlueEraser/c-multithreaded-client-server/blob/master/server.c
-// https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading
 #include <cstdio>
 #include <string>
 #include <thread>   /* used for threading */
@@ -19,150 +16,92 @@
 
 Clients clients;
 
-/*
-    BUG:
-        user IN-USE for second client
-*/
+
 
 void * socketThread(void *arg) {
     int currSocket = *((int *)arg);
-    std::string client_name;
-    bool isLoggedIn = false;
-    
-    
-    Client currClient("--MISSING--", currSocket, isLoggedIn);  // current client object
-    std::cout << "Client connected...\n";
+    char buffer[4096] = {0};
 
-    while (!currClient.isLoggedIn()) {
-        char buffer[1024] = {0};
-        int bytes_recv = recv(currSocket, buffer, 1024, 0);
-        std::cout << "RECEIVED: " << buffer;
-        std::string messageS(buffer);    
-        bool isNameTaken;
-        
-        std::cout << strlen(buffer) << std::endl;
+    int bytes_recv = recv(currSocket, buffer, 4096, 0);
+    std::string buf(buffer);
+    if (bytes_recv > 0) {
+        // chech if received name is taken
+        std::string client_name = buf.substr(11,(buf.length() - 12));
+        if (!clients.checkIfTaken(client_name)) {
+            // add client to list
+            Client currClient(client_name, currSocket, true);
+            clients.add(currClient);
 
-        if ((bytes_recv == 0) || (bytes_recv < 0)) {
-            break;
-        }
+            std::cout << "New client:\n";
+            //currClient.getAllInfo();
 
+            clients.print();
 
+            std::string line = "HELLO " + currClient.getName() + "\n";
+            send(currSocket, line.c_str(), line.length(), 0);
 
-        if ((strlen(buffer) > 0)) {
-            client_name = messageS.substr(11,(messageS.length()-12));
-
-            
-            isNameTaken = clients.checkIfTaken(client_name);
-            
-            if (isNameTaken == false) { 
+            // while client is loggin in.
+            while(1) {
+                char buffer2[4096] = {0};
+                int bytes_recv = recv(currSocket, buffer2, 4096, 0);
+                std::string buf2(buffer2);
                 
-                currClient.setName(client_name);
-                std::cout << "Client set name: " << currClient.getName() << std::endl;
-                isLoggedIn = true;
-                currClient.isLoggedIn(true);
-                
-                clients.add(currClient);
+                // if message received
+                if (bytes_recv > 0) {
+                    
+                    if (buf2 == "QUIT\n") {
+                        break;
+                    } 
+                    else if (buf2 == "WHO\n") {
+                        send(currSocket, clients.who().c_str(), clients.who().length(), 0);
+                        std::cout << currClient.getName() << "\t> !who\n";
+                    }
+                    else if (buf2.substr(0,4) == "SEND") {
+                        int handle = clients.find(buf2);
 
-                std::string loginMsg = "HELLO " + currClient.getName() + '\n';
+                        if (handle > 0) {
+                            std::cout << currClient.getName() << " sent message" << std::endl;
 
-                send(currSocket,loginMsg.c_str(),loginMsg.length(),0);
+                            std::string line = "DELIVERY " + currClient.getName() + " " + clients.extractMessage(buf2) + '\n';
 
-            } else if (isNameTaken == true) {
-                //isLoggedIn = false;
-                std::cout << "Client set name was taken." << std::endl;
-                send(currSocket,"IN-USE\n",7,0);
-                currClient.isLoggedIn(false);
-                clients.remove(currClient.getHandle());
+                            send(handle, line.c_str(), line.length(), 0);
 
-                close(currSocket);
-                pthread_exit(NULL);
-                //currClient.isLoggedIn(false);
+                            send(currClient.getHandle(), "SEND-OK\n", 9, 0);
+                        } else {
+                            send(currClient.getHandle(), "UNKNOWN\n", 9, 0);
+                        }
+                    } 
+                    else {
+                        send(currSocket, "BAD-RQST-BODY\n", 15, 0);
+                    }
+                } 
+                // if nothing received 
+                else {
+                  break;  
+                }
             }
+            
+            // When client quits
+            std::cout << currClient.getName() << " left.\n";
+            clients.remove(currClient.getName());
+
+        } else {
+            // close socket if taken
+            send(currSocket, "IN-USE\n", 8, 0);
+            std::cout << "New client's name was taken.\n";
         }
     }
 
-    if (currClient.isLoggedIn()) {
-        char buffer1[1024] = {0};
-        std::cout << "Client " << currClient.getHandle() << " is logged in as " << currClient.getName() << std::endl;
-        
-        std::string command = "";
-        while(currClient.isLoggedIn()) {
-            
-            std::cout << "Waiting for command...\n";
-            int bytes_recv = recv(currSocket, buffer1, 1024, 0);
-            
-            if ((bytes_recv == 0) || (bytes_recv < 0)) { // if client doesnt send anything (eg. disconnects w/o warning)
-                
-                //currClient.isLoggedIn(false);
-                if (clients.remove(currClient.getHandle()) == 1) {
-                    std::cout << "Could not remove\n";
-                }
-                
-                std::cout << currClient.getName() << " has disconnected." << std::endl;
-                
-                break;
-            }
-            
-            command = buffer1;
-
-            if (command == "WHO\n") {
-                
-                std::cout << currClient.getName() << " sent !who" << std::endl;
-                std::string line = clients.who();
-                send(currSocket, line.c_str(), line.length(), 0);
-                
-            } 
-            else if (command == "QUIT\n") {
-                
-                //currClient.isLoggedIn(false);
-
-                if (clients.remove(currClient.getHandle()) == 1) {
-                    std::cout << "Could not remove\n";
-                }
-                
-                std::cout << currClient.getName() << " quit." << std::endl;
-
-                break;
-
-            } 
-            else if (command == "ME\n") {
-
-                currClient.getAllInfo();
-                send(currSocket, "OK", 3, 0);
-                std::cout << currClient.getName() << " sent !me" << std::endl;
-
-            }
-            else if (command.substr(0,4) == "SEND") {
-                int handle = clients.find(command);
-
-                if (handle > 0) {
-                    std::cout << currClient.getName() << " sent message" << std::endl;
-
-                    std::string line = "DELIVERY " + currClient.getName() + " " + clients.extractMessage(command) + '\n';
-
-                    send(handle, line.c_str(), line.length(), 0);
-
-                    send(currClient.getHandle(), "SEND-OK\n", 9, 0);
-                } else {
-                    send(currClient.getHandle(), "UNKNOWN\n", 9, 0);
-                }
-            }
-            else {
-                send(currSocket, "BAD-RQST-BODY\n", 15, 0);
-            }
-        }    
-    }
-    // Need to close properly and remove client
-    
-    std::cout << "Client has left the chat\n";
-    currClient.isLoggedIn(false);
     close(currSocket);
     pthread_exit(NULL);
 }
 
 
+
+
 int main() {
     
+
     int sockFd, newSockFd, portNum;
 
     socklen_t clilen;
